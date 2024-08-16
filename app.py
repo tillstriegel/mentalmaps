@@ -63,7 +63,7 @@ def stream_groq_response(messages):
         You are an industrious opportunity finder.
         You have a deep understanding of human interests and desires.
         I want you to investigate a topic and determine what people might be looking for.
-        Always answer with a short informative sentence, followed by a list of comma-separated, specific, long-tail follow-up keywords.
+        Always answer with a short informative sentence, followed by a list of 5 comma-separated, specific, long-tail follow-up keywords.
         The keywords should be in the format [[keyword1, keyword2, keyword3, ...]] with double square brackets.
         """
     }

@@ -38,14 +38,19 @@ function processKeywords(element) {
 
 function updateSearchVolumes(searchVolumes) {
     console.log("Updating search volumes:", searchVolumes);
-    const keywordSpans = document.querySelectorAll('.message-content:last-child .inline-flex');
+    // Merge new search volumes with existing ones
+    lastSearchVolumes = { ...lastSearchVolumes, ...searchVolumes };
+    
+    const keywordSpans = document.querySelectorAll('.message-content .inline-flex');
     keywordSpans.forEach(span => {
         const keyword = span.childNodes[0].textContent.trim();
         const volumeSpan = span.querySelector('.search-volume');
         if (volumeSpan) {
-            const volume = searchVolumes[keyword] || 0;
-            volumeSpan.textContent = volume;
-            console.log(`Updated volume for ${keyword}: ${volume}`);
+            const volume = lastSearchVolumes[keyword];
+            if (volume !== undefined) {
+                volumeSpan.textContent = volume;
+                console.log(`Updated volume for ${keyword}: ${volume}`);
+            }
         }
     });
 }
@@ -126,9 +131,9 @@ form.addEventListener('submit', async (e) => {
                     removeLoadingAnimation();
                     addMessageToHistory(assistantResponse);
                 } else if (content.startsWith('SEARCH_VOLUMES')) {
-                    lastSearchVolumes = JSON.parse(content.slice(14));
-                    console.log("Received search volumes:", lastSearchVolumes);
-                    updateSearchVolumes(lastSearchVolumes);
+                    const newSearchVolumes = JSON.parse(content.slice(14));
+                    console.log("Received search volumes:", newSearchVolumes);
+                    updateSearchVolumes(newSearchVolumes);
                 } else {
                     assistantResponse += content;
                 }
