@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Research Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wet-asphalt': '#34495e',
+                        'midnight-blue': '#2c3e50',
+                        'clouds': '#ecf0f1',
+                        'silver': '#bdc3c7',
+                        'concrete': '#95a5a6',
+                        'asbestos': '#7f8c8d',
+                        'peter-river': '#3498db',
+                        'belize-hole': '#2980b9',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -15,32 +33,32 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl overflow-hidden">
-        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
-            <h1 class="text-3xl font-bold text-white">Research Engine</h1>
+<body class="bg-clouds min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden">
+        <div class="bg-gradient-to-r from-wet-asphalt to-midnight-blue p-8">
+            <h1 class="text-4xl font-bold text-clouds tracking-wide">Research Engine</h1>
         </div>
-        <div class="p-6">
-            <div id="chat-history" class="mb-6 max-h-[60vh] overflow-y-auto space-y-4">
+        <div class="p-8">
+            <div id="chat-history" class="mb-8 max-h-[60vh] overflow-y-auto space-y-6">
                 {% for i in range(messages|length) %}
                     {% if messages[i].role == 'assistant' %}
-                        <div class="p-4 rounded-lg shadow-md bg-white border-l-4 border-green-500">
-                            <p class="font-semibold text-sm text-green-700 mb-2">{{ messages[i-1].content if i > 0 and messages[i-1].role == 'user' else '' }}</p>
-                            <p class="text-gray-800 message-content">{{ messages[i].content }}</p>
+                        <div class="p-6 rounded-xl shadow-md bg-white border-l-4 border-peter-river transition-all duration-300 hover:shadow-lg">
+                            <p class="font-semibold text-sm text-belize-hole mb-3">{{ messages[i-1].content if i > 0 and messages[i-1].role == 'user' else '' }}</p>
+                            <p class="text-wet-asphalt message-content">{{ messages[i].content }}</p>
                         </div>
                     {% endif %}
                 {% endfor %}
             </div>
             <form id="chat-form" class="space-y-4">
-                <div class="flex space-x-2">
+                <div class="flex space-x-3">
                     <input type="text" 
                            id="user-input"
                            name="user_input"
-                           class="flex-grow px-4 py-3 text-lg border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" 
+                           class="flex-grow px-5 py-4 text-lg border-2 border-silver rounded-xl focus:outline-none focus:ring-2 focus:ring-peter-river focus:border-peter-river transition duration-200" 
                            placeholder="Type your message here..."
                            autocomplete="off">
                     <button type="submit" 
-                            class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out flex items-center">
+                            class="px-8 py-4 bg-peter-river text-white rounded-xl hover:bg-belize-hole focus:outline-none focus:ring-2 focus:ring-belize-hole focus:ring-offset-2 transition duration-150 ease-in-out flex items-center">
                         <span class="mr-2">Send</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -49,7 +67,7 @@
                 </div>
             </form>
             <button id="clear-history" 
-                    class="mt-4 py-1 px-3 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    class="mt-6 py-2 px-4 text-sm bg-silver text-midnight-blue rounded-lg hover:bg-concrete focus:outline-none focus:ring-2 focus:ring-concrete focus:ring-offset-2 transition duration-150 ease-in-out">
                 Clear History
             </button>
         </div>
