@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import json
 from pytrends.request import TrendReq
 import re
+import requests
 
 load_dotenv()
 
@@ -35,6 +36,28 @@ def home():
         return Response(stream_groq_response(session['messages']), content_type='text/event-stream')
     
     return render_template('index.html', messages=session['messages'])
+
+@app.route('/autocomplete', methods=['GET'])
+def autocomplete():
+    query = request.args.get('q', '')
+    suggestions = get_autocomplete_suggestions(query)
+    return jsonify(suggestions)
+
+def get_autocomplete_suggestions(query):
+    url = f'https://www.google.com/complete/search?q={query}&cp={len(query)}&client=gws-wiz&xssi=t&hl=en'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
+    }
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        # Remove the leading )]}'
+        data = response.text[5:]
+        suggestions = json.loads(data)[0]
+        # Extract only the text suggestions
+        return [item[0] for item in suggestions]
+    else:
+        return []
 
 def get_search_volume(keywords):
     try:

@@ -158,3 +158,87 @@ clearHistoryButton.addEventListener('click', async () => {
         }
     }
 });
+
+// Add autocomplete functionality
+const suggestionsList = document.createElement('ul');
+suggestionsList.className = 'absolute z-10 w-full bg-white border border-silver rounded-b-xl shadow-lg hidden';
+userInput.parentNode.appendChild(suggestionsList);
+
+let currentFocus = -1;
+
+userInput.addEventListener('input', debounce(async (e) => {
+    const query = e.target.value;
+    if (query.length < 2) {
+        suggestionsList.innerHTML = '';
+        suggestionsList.classList.add('hidden');
+        return;
+    }
+
+    const response = await fetch(`/autocomplete?q=${encodeURIComponent(query)}`);
+    const suggestions = await response.json();
+
+    suggestionsList.innerHTML = '';
+    if (suggestions.length > 0) {
+        suggestions.forEach((suggestion, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = suggestion; // Changed from textContent to innerHTML
+            li.className = 'px-4 py-2 hover:bg-clouds cursor-pointer';
+            li.addEventListener('click', () => {
+                userInput.value = li.textContent; // Use textContent here to get plain text
+                suggestionsList.classList.add('hidden');
+            });
+            suggestionsList.appendChild(li);
+        });
+        suggestionsList.classList.remove('hidden');
+    } else {
+        suggestionsList.classList.add('hidden');
+    }
+}, 300));
+
+userInput.addEventListener('keydown', (e) => {
+    const items = suggestionsList.getElementsByTagName('li');
+    if (e.key === 'ArrowDown') {
+        currentFocus++;
+        addActive(items);
+    } else if (e.key === 'ArrowUp') {
+        currentFocus--;
+        addActive(items);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (currentFocus > -1) {
+            if (items) items[currentFocus].click();
+        }
+    }
+});
+
+function addActive(items) {
+    if (!items) return false;
+    removeActive(items);
+    if (currentFocus >= items.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (items.length - 1);
+    items[currentFocus].classList.add('bg-peter-river', 'text-white');
+}
+
+function removeActive(items) {
+    for (let i = 0; i < items.length; i++) {
+        items[i].classList.remove('bg-peter-river', 'text-white');
+    }
+}
+
+document.addEventListener('click', (e) => {
+    if (e.target !== userInput) {
+        suggestionsList.classList.add('hidden');
+    }
+});
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
