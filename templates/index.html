@@ -10,14 +10,12 @@
             theme: {
                 extend: {
                     colors: {
-                        'wet-asphalt': '#34495e',
-                        'midnight-blue': '#2c3e50',
-                        'clouds': '#ecf0f1',
-                        'silver': '#bdc3c7',
-                        'concrete': '#95a5a6',
-                        'asbestos': '#7f8c8d',
-                        'peter-river': '#3498db',
-                        'belize-hole': '#2980b9',
+                        'primary': '#3498db',
+                        'primary-dark': '#2980b9',
+                        'secondary': '#34495e',
+                        'secondary-dark': '#2c3e50',
+                        'light': '#ecf0f1',
+                        'light-dark': '#bdc3c7',
                     }
                 }
             }
@@ -31,20 +29,41 @@
         .animate-pulse {
             animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        
+        #chat-form {
+            position: relative;
+        }
+        
+        .autocomplete-items li {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff; 
+            border-bottom: 1px solid #d4d4d4; 
+        }
+
+        .autocomplete-items li:hover {
+            background-color: #e9e9e9; 
+        }
+
+        .autocomplete-items li.autocomplete-active {
+            background-color: #3498db !important; 
+            color: #ffffff; 
+        }
     </style>
 </head>
-<body class="bg-clouds min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden">
-        <div class="bg-gradient-to-r from-wet-asphalt to-midnight-blue p-8">
-            <h1 class="text-4xl font-bold text-clouds tracking-wide">Research Engine</h1>
+<body class="bg-light min-h-screen flex items-center justify-center p-4 font-sans">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden">
+        <div class="bg-gradient-to-r from-secondary to-secondary-dark p-8">
+            <h1 class="text-4xl font-bold text-light tracking-wide">Research Engine</h1>
+            <p class="text-light-dark mt-2">Discover insights and opportunities</p>
         </div>
         <div class="p-8">
             <div id="chat-history" class="mb-8 max-h-[60vh] overflow-y-auto space-y-6">
                 {% for i in range(messages|length) %}
                     {% if messages[i].role == 'assistant' %}
-                        <div class="p-6 rounded-xl shadow-md bg-white border-l-4 border-peter-river transition-all duration-300 hover:shadow-lg">
-                            <p class="font-semibold text-sm text-belize-hole mb-3">{{ messages[i-1].content if i > 0 and messages[i-1].role == 'user' else '' }}</p>
-                            <p class="text-wet-asphalt message-content">{{ messages[i].content }}</p>
+                        <div class="p-6 rounded-xl shadow-md bg-white border-l-4 border-primary transition-all duration-300 hover:shadow-lg">
+                            <p class="font-semibold text-sm text-primary-dark mb-3">{{ messages[i-1].content if i > 0 and messages[i-1].role == 'user' else '' }}</p>
+                            <p class="text-secondary message-content">{{ messages[i].content }}</p>
                         </div>
                     {% endif %}
                 {% endfor %}
@@ -54,11 +73,11 @@
                     <input type="text" 
                            id="user-input"
                            name="user_input"
-                           class="flex-grow px-5 py-4 text-lg border-2 border-silver rounded-xl focus:outline-none focus:ring-2 focus:ring-peter-river focus:border-peter-river transition duration-200" 
+                           class="flex-grow px-5 py-4 text-lg border-2 border-light-dark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition duration-200" 
                            placeholder="Type your message here..."
                            autocomplete="off">
                     <button type="submit" 
-                            class="px-8 py-4 bg-peter-river text-white rounded-xl hover:bg-belize-hole focus:outline-none focus:ring-2 focus:ring-belize-hole focus:ring-offset-2 transition duration-150 ease-in-out flex items-center">
+                            class="px-8 py-4 bg-primary text-white rounded-xl hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-dark focus:ring-offset-2 transition duration-150 ease-in-out flex items-center">
                         <span class="mr-2">Send</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -67,7 +86,7 @@
                 </div>
             </form>
             <button id="clear-history" 
-                    class="mt-6 py-2 px-4 text-sm bg-silver text-midnight-blue rounded-lg hover:bg-concrete focus:outline-none focus:ring-2 focus:ring-concrete focus:ring-offset-2 transition duration-150 ease-in-out">
+                    class="mt-6 py-2 px-4 text-sm bg-light-dark text-secondary-dark rounded-lg hover:bg-light focus:outline-none focus:ring-2 focus:ring-light focus:ring-offset-2 transition duration-150 ease-in-out">
                 Clear History
             </button>
         </div>

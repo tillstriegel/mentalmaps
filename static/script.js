@@ -16,15 +16,15 @@ function processKeywords(element) {
         if (keywordMatch) {
             const keywords = keywordMatch[1].split(',').map(keyword => keyword.trim());
             const keywordHtml = keywords.map(keyword => 
-                `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-peter-river to-belize-hole text-white shadow-sm hover:from-belize-hole hover:to-peter-river transition-all duration-200 cursor-pointer mr-2 mb-2" onclick="sendKeyword('${keyword}')">
+                `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-primary to-primary-dark text-white shadow-sm hover:from-primary-dark hover:to-primary transition-all duration-200 cursor-pointer mr-2 mb-2" onclick="sendKeyword('${keyword}')">
                     ${keyword}
-                    <span class="search-volume ml-2 bg-white text-midnight-blue px-2 py-0.5 rounded-full text-xs font-semibold">...</span>
+                    <span class="search-volume ml-2 bg-white text-secondary-dark px-2 py-0.5 rounded-full text-xs font-semibold">...</span>
                 </span>`
             ).join('');
             
             element.innerHTML = content.replace(/\[\[.*?\]\]/, '') +
-                `<div class="mt-4 pt-2 border-t border-silver">
-                    <p class="text-sm font-medium text-wet-asphalt mb-2">Related topics:</p>
+                `<div class="mt-4 pt-2 border-t border-light-dark">
+                    <p class="text-sm font-medium text-secondary mb-2">Related topics:</p>
                     <div class="flex flex-wrap">${keywordHtml}</div>
                 </div>`;
             
@@ -60,11 +60,11 @@ document.querySelectorAll('.message-content').forEach(processKeywords);
 
 function addMessageToHistory(content) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = 'p-6 rounded-xl shadow-md bg-white border-l-4 border-peter-river transition-all duration-300 hover:shadow-lg';
+    messageDiv.className = 'p-6 rounded-xl shadow-md bg-white border-l-4 border-primary transition-all duration-300 hover:shadow-lg';
     
     messageDiv.innerHTML = `
-        <p class="font-semibold text-sm text-belize-hole mb-3">${lastUserMessage}</p>
-        <p class="text-wet-asphalt message-content">${content}</p>
+        <p class="font-semibold text-sm text-primary-dark mb-3">${lastUserMessage}</p>
+        <p class="text-secondary message-content">${content}</p>
     `;
     chatHistory.appendChild(messageDiv);
     processKeywords(messageDiv.querySelector('.message-content'));
@@ -78,13 +78,13 @@ function sendKeyword(keyword) {
 
 function addLoadingAnimation() {
     const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'loading p-6 rounded-xl shadow-md bg-white border-l-4 border-peter-river space-y-2';
+    loadingDiv.className = 'loading p-6 rounded-xl shadow-md bg-white border-l-4 border-primary space-y-2';
     loadingDiv.innerHTML = `
-        <div class="h-4 bg-clouds rounded w-3/4 animate-pulse"></div>
+        <div class="h-4 bg-light rounded w-3/4 animate-pulse"></div>
         <div class="space-y-2">
-            <div class="h-4 bg-silver rounded animate-pulse"></div>
-            <div class="h-4 bg-silver rounded animate-pulse"></div>
-            <div class="h-4 bg-silver rounded w-5/6 animate-pulse"></div>
+            <div class="h-4 bg-light-dark rounded animate-pulse"></div>
+            <div class="h-4 bg-light-dark rounded animate-pulse"></div>
+            <div class="h-4 bg-light-dark rounded w-5/6 animate-pulse"></div>
         </div>
     `;
     chatHistory.appendChild(loadingDiv);
@@ -159,10 +159,10 @@ clearHistoryButton.addEventListener('click', async () => {
     }
 });
 
-// Add autocomplete functionality
+// Modify the suggestionsList creation and styling
 const suggestionsList = document.createElement('ul');
-suggestionsList.className = 'absolute z-10 w-full bg-white border border-silver rounded-b-xl shadow-lg hidden';
-userInput.parentNode.appendChild(suggestionsList);
+suggestionsList.className = 'absolute z-10 w-full bg-white border border-light-dark rounded-b-xl shadow-lg hidden mt-1 max-h-60 overflow-y-auto';
+userInput.parentNode.insertBefore(suggestionsList, userInput.nextSibling);
 
 let currentFocus = -1;
 
@@ -181,11 +181,12 @@ userInput.addEventListener('input', debounce(async (e) => {
     if (suggestions.length > 0) {
         suggestions.forEach((suggestion, index) => {
             const li = document.createElement('li');
-            li.innerHTML = suggestion; // Changed from textContent to innerHTML
-            li.className = 'px-4 py-2 hover:bg-clouds cursor-pointer';
+            li.innerHTML = suggestion;
+            li.className = 'px-4 py-2 hover:bg-light cursor-pointer transition-colors duration-150';
             li.addEventListener('click', () => {
-                userInput.value = li.textContent; // Use textContent here to get plain text
+                userInput.value = li.textContent;
                 suggestionsList.classList.add('hidden');
+                form.dispatchEvent(new Event('submit')); // Submit the form when an option is selected
             });
             suggestionsList.appendChild(li);
         });
@@ -195,33 +196,40 @@ userInput.addEventListener('input', debounce(async (e) => {
     }
 }, 300));
 
+// Modify the keydown event listener
 userInput.addEventListener('keydown', (e) => {
     const items = suggestionsList.getElementsByTagName('li');
     if (e.key === 'ArrowDown') {
+        e.preventDefault(); // Prevent cursor from moving
         currentFocus++;
         addActive(items);
     } else if (e.key === 'ArrowUp') {
+        e.preventDefault(); // Prevent cursor from moving
         currentFocus--;
         addActive(items);
     } else if (e.key === 'Enter') {
         e.preventDefault();
         if (currentFocus > -1) {
             if (items) items[currentFocus].click();
+        } else {
+            form.dispatchEvent(new Event('submit')); // Submit the form if no suggestion is selected
         }
     }
 });
 
+// Update the addActive function
 function addActive(items) {
     if (!items) return false;
     removeActive(items);
     if (currentFocus >= items.length) currentFocus = 0;
     if (currentFocus < 0) currentFocus = (items.length - 1);
-    items[currentFocus].classList.add('bg-peter-river', 'text-white');
+    items[currentFocus].classList.add('bg-primary', 'text-white');
+    userInput.value = items[currentFocus].textContent; // Update input value
 }
 
 function removeActive(items) {
     for (let i = 0; i < items.length; i++) {
-        items[i].classList.remove('bg-peter-river', 'text-white');
+        items[i].classList.remove('bg-primary', 'text-white');
     }
 }
 

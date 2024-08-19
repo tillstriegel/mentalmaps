@@ -44,7 +44,7 @@ def autocomplete():
     return jsonify(suggestions)
 
 def get_autocomplete_suggestions(query):
-    url = f'https://www.google.com/complete/search?q={query}&cp={len(query)}&client=gws-wiz&xssi=t&hl=en'
+    url = f'https://www.google.com/complete/search?q={query}&cp={len(query)}&client=gws-wiz&xssi=t&hl=en-US'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
     }
@@ -70,7 +70,7 @@ def get_search_volume(keywords):
         if not keywords:
             return {}
         
-        pytrends.build_payload(keywords, timeframe='today 12-m')
+        pytrends.build_payload(keywords, timeframe='today 12-m', geo='US')
         interest_over_time_df = pytrends.interest_over_time()
         
         return {keyword: int(interest_over_time_df[keyword].mean()) 
@@ -86,7 +86,7 @@ def stream_groq_response(messages):
         You are an industrious opportunity finder.
         You have a deep understanding of human interests and desires.
         I want you to investigate a topic and determine what people might be looking for.
-        Always answer with a short informative sentence, followed by a list of 5 comma-separated, related, popular long-tail keywords.
+        Always answer with a short informative sentence, followed by a list of 5 comma-separated, related, popular google searches.
         The keywords should be in the format [[keyword1, keyword2, keyword3, ...]] with double square brackets.
         """
     }
