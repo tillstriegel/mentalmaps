@@ -56,7 +56,7 @@ function initMindmap() {
     mindmapContainer.addEventListener('dblclick', startCreatingNewNode);
 }
 
-function addNodeToMindmap(content, parentId = null, searchVolume = null, x = null, y = null) {
+function addNodeToMindmap(content, parentId = null, searchVolume = null, x = null, y = null, iconName = null) {
     let newNode;
     if (parentId) {
         const existingNode = nodes.find(n => n.label.split('\n')[0] === content && edges.some(e => e.from === parentId && e.to === n.id));
@@ -76,7 +76,8 @@ function addNodeToMindmap(content, parentId = null, searchVolume = null, x = nul
         content: content, // Store original content without search volume
         x: x !== null ? x : startX,
         y: y !== null ? y : startY,
-        searchVolume: searchVolume  // Store the search volume
+        searchVolume: searchVolume,  // Store the search volume
+        iconName: iconName  // Add this line to store the icon name
     };
 
     // Use spiral placement for new nodes
@@ -146,10 +147,30 @@ function renderMindmap() {
     nodes.forEach(node => {
         const nodeElement = document.createElement('div');
         nodeElement.className = 'node';
-        nodeElement.textContent = node.label;
         nodeElement.style.left = `${node.x - 50}px`;
         nodeElement.style.top = `${node.y - 25}px`;
         
+        // Create a container for the label and icon
+        const contentContainer = document.createElement('div');
+        contentContainer.className = 'node-content';
+        
+        // Add the icon if it exists
+        if (node.iconName) {
+            const iconElement = document.createElement('span');
+            iconElement.className = 'material-symbols-outlined';
+            iconElement.textContent = node.iconName;
+            iconElement.style.fontSize = '24px'; // Ensure the icon size
+            iconElement.style.lineHeight = '1'; // Adjust line height
+            contentContainer.appendChild(iconElement);
+        }
+        
+        // Add the label
+        const labelElement = document.createElement('div');
+        labelElement.textContent = node.label;
+        contentContainer.appendChild(labelElement);
+        
+        nodeElement.appendChild(contentContainer);
+
         // Color the node based on its search volume
         const volume = parseInt(node.label.split('(')[1]);
         if (!isNaN(volume)) {
@@ -436,7 +457,14 @@ function updateSearchVolumes(searchVolumes, rootId) {
 
 // Update the processAssistantResponse function
 function processAssistantResponse(response, parentId) {
+    console.log("Full AI response:", JSON.stringify(response)); // Log the full response with newlines preserved
+
     const keywordMatch = response.match(/\[\[(.*?)\]\]/);
+    const iconMatch = response.match(/\]\]\s*([\s\S]*)/); // Match everything after ']]'
+
+    console.log("Keyword match:", keywordMatch); // Log the keyword match
+    console.log("Icon match:", iconMatch); // Log the icon match
+
     if (keywordMatch) {
         const keywords = keywordMatch[1].split(',').map(keyword => keyword.trim());
         keywords.forEach(keyword => {
@@ -446,8 +474,32 @@ function processAssistantResponse(response, parentId) {
             }
         });
     }
+
+    if (iconMatch) {
+        const iconName = iconMatch[1].trim();
+        console.log("Extracted icon name:", iconName); // Log the extracted icon name
+        const parentNode = nodes.find(n => n.id === parentId);
+        if (parentNode) {
+            parentNode.iconName = iconName;
+            console.log(`Icon '${iconName}' added to node ${parentId}`); // Debug log
+        } else {
+            console.log(`Parent node with id ${parentId} not found`); // Debug log
+        }
+    } else {
+        console.log("No icon name found in the response"); // Debug log
+    }
+
     positionNodes();
     renderMindmap();
+}
+
+// Update the updateNodeWithIcon function
+function updateNodeWithIcon(nodeId, iconName) {
+    const node = nodes.find(n => n.id === nodeId);
+    if (node) {
+        node.iconName = iconName;
+        renderMindmap();  // Re-render the mindmap to show the updated icon
+    }
 }
 
 clearHistoryButton.addEventListener('click', async () => {
@@ -519,6 +571,12 @@ function displayAutocompleteSuggestions(suggestions) {
 function highlightMatch(suggestion, query) {
     const regex = new RegExp(`(${query})`, 'gi');
     return suggestion.replace(regex, '<strong class="text-primary">$1</strong>');
+}
+
+// Add this function to handle the icon extraction
+function extractIconFromResponse(response) {
+    const iconMatch = response.match(/\n(\w+)\s*$/);
+    return iconMatch ? iconMatch[1].trim() : null;
 }
 
 // Add this function at the top of the file

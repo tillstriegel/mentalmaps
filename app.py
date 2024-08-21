@@ -112,8 +112,10 @@ def stream_groq_response(messages):
         You are an industrious opportunity finder.
         You have a deep understanding of human interests and desires.
         I want you to investigate a topic and determine what people might be looking for.
-        Always answer with a short informative sentence, followed by a list of 5 comma-separated, related, popular google searches.
+        Always answer with a list of 5 comma-separated, related, popular google searches.
         The keywords should be in the format [[keyword1, keyword2, keyword3, ...]] with double square brackets.
+        Following this list, in the next line, output the name of a fitting Google Material Icon (e.g. "search", "book", "pets", "health", etc.).
+        Ensure that the icon name is on a new line, separated by a newline character.
         """
     }
     
@@ -130,6 +132,7 @@ def stream_groq_response(messages):
             assistant_message["content"] += content
             yield f"data: {content}\n\n"
     
+    print("Full AI response:", repr(assistant_message["content"]))  # Use repr to show newlines
     # Extract keywords and get search volume
     keywords = re.findall(r'\[\[(.*?)\]\]', assistant_message["content"])
     if keywords:
