@@ -10,12 +10,13 @@
             theme: {
                 extend: {
                     colors: {
-                        'primary': '#3498db',
-                        'primary-dark': '#2980b9',
-                        'secondary': '#34495e',
-                        'secondary-dark': '#2c3e50',
-                        'light': '#ecf0f1',
-                        'light-dark': '#bdc3c7',
+                        'primary': '#64748b',
+                        'primary-dark': '#475569',
+                        'secondary': '#94a3b8',
+                        'secondary-dark': '#64748b',
+                        'light': '#f1f5f9',
+                        'light-dark': '#e2e8f0',
+                        'accent': '#0ea5e9',
                     }
                 }
             }
@@ -25,34 +26,39 @@
         #mindmap {
             width: 100%;
             height: 60vh;
-            border: 1px solid #ddd;
-            background-color: #f8f8f8;
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
             overflow: auto;
             position: relative;
         }
         .node {
             position: absolute;
             background-color: #fff;
-            border: 1px solid #3498db;
+            border: 1px solid #94a3b8;
             border-radius: 8px;
             padding: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
+            text-align: center;
+            min-width: 100px;
+            max-width: 150px;
+            word-wrap: break-word;
         }
         .node:hover {
-            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+            box-shadow: 0 0 10px rgba(148, 163, 184, 0.5);
+            transform: scale(1.05);
         }
         .edge {
             position: absolute;
-            background-color: #3498db;
+            background-color: #94a3b8;
             height: 2px;
             transform-origin: left center;
         }
     </style>
 </head>
 <body class="bg-light min-h-screen flex flex-col items-center justify-center p-4 font-sans">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden">
-        <div class="bg-gradient-to-r from-secondary to-secondary-dark p-8">
+    <div class="bg-white rounded-3xl shadow-lg w-full max-w-4xl overflow-hidden">
+        <div class="bg-gradient-to-r from-primary to-primary-dark p-8">
             <h1 class="text-4xl font-bold text-light tracking-wide">Research Engine</h1>
             <p class="text-light-dark mt-2">Discover insights and opportunities</p>
         </div>
@@ -64,14 +70,13 @@
                         <input type="text" 
                                id="user-input"
                                name="user_input"
-                               class="w-full px-5 py-4 text-lg border-2 border-light-dark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition duration-200" 
+                               class="w-full px-5 py-4 text-lg border-2 border-light-dark rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition duration-200" 
                                placeholder="Type your message here..."
                                autocomplete="off">
-                        <!-- The autocomplete list will be inserted here by JavaScript -->
-                        <ul class="absolute z-10 bg-white border border-gray-300 w-full mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto" style="display: none;"></ul>
+                        <ul class="absolute z-10 bg-white border border-light-dark w-full mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto" style="display: none;"></ul>
                     </div>
                     <button type="submit" 
-                            class="px-8 py-4 bg-primary text-white rounded-xl hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-dark focus:ring-offset-2 transition duration-150 ease-in-out flex items-center">
+                            class="px-8 py-4 bg-accent text-white rounded-xl hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-dark focus:ring-offset-2 transition duration-150 ease-in-out flex items-center">
                         <span class="mr-2">Send</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -80,7 +85,7 @@
                 </div>
             </form>
             <button id="clear-history" 
-                    class="mt-4 py-2 px-4 text-sm bg-light-dark text-secondary-dark rounded-lg hover:bg-light focus:outline-none focus:ring-2 focus:ring-light focus:ring-offset-2 transition duration-150 ease-in-out">
+                    class="mt-4 py-2 px-4 text-sm bg-light-dark text-primary-dark rounded-lg hover:bg-light focus:outline-none focus:ring-2 focus:ring-light focus:ring-offset-2 transition duration-150 ease-in-out">
                 Clear History
             </button>
         </div>

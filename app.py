@@ -119,7 +119,7 @@ def stream_groq_response(messages):
     
     chat_completion = client.chat.completions.create(
         messages=[system_prompt] + messages,
-        model="llama3-70b-8192",
+        model="llama-3.1-70b-versatile",
         stream=True,
     )
 

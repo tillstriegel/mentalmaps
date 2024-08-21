@@ -27,6 +27,9 @@ const MAX_ZOOM = 5;
 let isDraggingPane = false;
 let startPanX, startPanY;
 
+let isCreatingNewNode = false;
+let newNodeInput = null;
+
 function initMindmap() {
     mindmapContainer.innerHTML = '';
     nodes = [];
@@ -48,9 +51,12 @@ function initMindmap() {
     mindmapContainer.addEventListener('mousedown', startPanning);
     document.addEventListener('mousemove', pan);
     document.addEventListener('mouseup', stopPanning);
+
+    // Add event listener for double-click
+    mindmapContainer.addEventListener('dblclick', startCreatingNewNode);
 }
 
-function addNodeToMindmap(content, parentId = null, searchVolume = null) {
+function addNodeToMindmap(content, parentId = null, searchVolume = null, x = null, y = null) {
     let newNode;
     if (parentId) {
         const existingNode = nodes.find(n => n.label.split('\n')[0] === content && edges.some(e => e.from === parentId && e.to === n.id));
@@ -68,8 +74,9 @@ function addNodeToMindmap(content, parentId = null, searchVolume = null) {
         id: ++nodeId, 
         label: label,
         content: content, // Store original content without search volume
-        x: startX,
-        y: startY
+        x: x !== null ? x : startX,
+        y: y !== null ? y : startY,
+        searchVolume: searchVolume  // Store the search volume
     };
 
     // Use spiral placement for new nodes
@@ -143,6 +150,15 @@ function renderMindmap() {
         nodeElement.style.left = `${node.x - 50}px`;
         nodeElement.style.top = `${node.y - 25}px`;
         
+        // Color the node based on its search volume
+        const volume = parseInt(node.label.split('(')[1]);
+        if (!isNaN(volume)) {
+            const color = getColorForVolume(volume);
+            nodeElement.style.backgroundColor = color;
+            nodeElement.style.color = volume > 50 ? '#fff' : '#1e293b';  // Adjust text color for readability
+            nodeElement.style.borderColor = 'transparent';
+        }
+        
         let isDragging = false;
         let dragStartTime;
         let dragStartX, dragStartY;
@@ -187,7 +203,7 @@ function startPanning(e) {
 }
 
 function pan(e) {
-    if (isDraggingPane) {
+    if (isDraggingPane && !isCreatingNewNode) {
         e.preventDefault();
         const wrapper = mindmapContainer.querySelector('.mindmap-wrapper');
         const x = e.clientX - mindmapContainer.offsetLeft;
@@ -239,6 +255,7 @@ function stopDragging(e) {
 }
 
 function handleZoom(event) {
+    if (isCreatingNewNode) return;
     event.preventDefault();
 
     const delta = Math.sign(event.deltaY) * -1;
@@ -410,6 +427,7 @@ function updateSearchVolumes(searchVolumes, rootId) {
         const keyword = node.content;
         if (lastSearchVolumes[keyword] !== undefined) {
             node.label = `${keyword}\n(${lastSearchVolumes[keyword]})`;
+            node.searchVolume = lastSearchVolumes[keyword];  // Update the stored search volume
         }
     });
     positionNodes();
@@ -503,6 +521,15 @@ function highlightMatch(suggestion, query) {
     return suggestion.replace(regex, '<strong class="text-primary">$1</strong>');
 }
 
+// Add this function at the top of the file
+function getColorForVolume(volume) {
+    const maxVolume = 100;  // Adjust this value based on your typical maximum volume
+    const minLightness = 40; // Darker blue
+    const maxLightness = 80; // Lighter blue
+    const lightness = maxLightness - (volume / maxVolume) * (maxLightness - minLightness);
+    return `hsl(210, 70%, ${lightness}%)`;
+}
+
 // Add these event listeners for the userInput
 userInput.addEventListener('input', handleAutocomplete);
 userInput.addEventListener('focus', handleAutocomplete);
@@ -532,3 +559,52 @@ mindmapContainer.addEventListener('wheel', handleZoom, { passive: false });
 
 // Add this event listener at the bottom of the file
 form.addEventListener('submit', submitForm);
+
+function startCreatingNewNode(e) {
+    if (e.target !== mindmapContainer) return;
+
+    isCreatingNewNode = true;
+    
+    const wrapper = mindmapContainer.querySelector('.mindmap-wrapper');
+    const rect = wrapper.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+
+    newNodeInput = document.createElement('input');
+    newNodeInput.type = 'text';
+    newNodeInput.className = 'node new-node-input';
+    newNodeInput.style.position = 'absolute';
+    newNodeInput.style.left = `${x - 50}px`;
+    newNodeInput.style.top = `${y - 25}px`;
+    newNodeInput.style.width = '100px';
+    newNodeInput.style.height = '50px';
+    newNodeInput.style.zIndex = '1000';
+
+    wrapper.appendChild(newNodeInput);
+    newNodeInput.focus();
+
+    newNodeInput.addEventListener('keydown', handleNewNodeInputKeydown);
+    newNodeInput.addEventListener('blur', cancelNewNode);
+}
+
+function handleNewNodeInputKeydown(e) {
+    if (e.key === 'Enter') {
+        const content = newNodeInput.value.trim();
+        if (content) {
+            const newNodeId = addNodeToMindmap(content, null, null, parseFloat(newNodeInput.style.left), parseFloat(newNodeInput.style.top));
+            cancelNewNode();
+            // Trigger AI response for the new node
+            sendKeyword(content, newNodeId);
+        }
+    } else if (e.key === 'Escape') {
+        cancelNewNode();
+    }
+}
+
+function cancelNewNode() {
+    if (newNodeInput && newNodeInput.parentNode) {
+        newNodeInput.parentNode.removeChild(newNodeInput);
+    }
+    isCreatingNewNode = false;
+    newNodeInput = null;
+}
