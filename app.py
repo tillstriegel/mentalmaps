@@ -6,6 +6,7 @@ import json
 from pytrends.request import TrendReq
 import re
 import requests
+import time
 
 load_dotenv()
 
@@ -16,7 +17,7 @@ client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
 
-pytrends = TrendReq(hl='en-US', tz=360)
+pytrends = TrendReq(hl='en-US', tz=360, timeout=(10,25), retries=2, backoff_factor=0.1)
 
 session = {}
 
@@ -42,6 +43,17 @@ def autocomplete():
     query = request.args.get('q', '')
     suggestions = get_autocomplete_suggestions(query)
     return jsonify(suggestions)
+
+@app.route('/search_volumes', methods=['POST'])
+def search_volumes():
+    try:
+        keywords = request.json['keywords']
+        volumes = get_search_volume(keywords)
+        print(f"Search volumes: {volumes}")  # Log the volumes
+        return jsonify(volumes)
+    except Exception as e:
+        print(f"Error in search_volumes route: {e}")
+        return jsonify({"error": str(e)}), 500
 
 def get_autocomplete_suggestions(query):
     url = f'https://www.google.com/complete/search?q={query}&cp={len(query)}&client=gws-wiz&xssi=t&hl=en-US'
@@ -70,11 +82,25 @@ def get_search_volume(keywords):
         if not keywords:
             return {}
         
+        # Add a small delay to avoid rate limiting
+        time.sleep(1)
+        
         pytrends.build_payload(keywords, timeframe='today 12-m', geo='US')
         interest_over_time_df = pytrends.interest_over_time()
         
-        return {keyword: int(interest_over_time_df[keyword].mean()) 
-                for keyword in keywords if keyword in interest_over_time_df.columns}
+        # If the dataframe is empty, return 0 for all keywords
+        if interest_over_time_df.empty:
+            return {keyword: 0 for keyword in keywords}
+        
+        # Calculate the mean interest for each keyword
+        volumes = {}
+        for keyword in keywords:
+            if keyword in interest_over_time_df.columns:
+                volumes[keyword] = int(interest_over_time_df[keyword].mean())
+            else:
+                volumes[keyword] = 0
+        
+        return volumes
     except Exception as e:
         print(f"Error fetching search volume: {e}")
         return {keyword: 0 for keyword in keywords}
