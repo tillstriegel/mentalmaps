@@ -6,6 +6,9 @@ const chatHistory = document.getElementById('chat-history');
 const clearHistoryButton = document.getElementById('clear-history');
 const userInput = document.getElementById('user-input');
 const mindmapContainer = document.getElementById('mindmap');
+const autocompleteList = document.createElement('ul');
+autocompleteList.className = 'absolute z-10 bg-white border border-gray-300 w-full mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto';
+let autocompleteTimeout;
 
 let lastUserMessage = '';
 let nodes = [];
@@ -68,11 +71,29 @@ function addNodeToMindmap(content, parentId = null, searchVolume = null) {
     if (parentId !== null) {
         edges.push({ from: parentId, to: newNode.id });
     }
+    groupNewNodes(parentId);
     renderMindmap();
     return newNode.id;
 }
 
+function groupNewNodes(parentId) {
+    if (!parentId) return;
+
+    const parentNode = nodes.find(n => n.id === parentId);
+    const childNodes = nodes.filter(n => edges.some(e => e.from === parentId && e.to === n.id));
+
+    const angleStep = (2 * Math.PI) / childNodes.length;
+    const radius = 150; // Distance from parent node
+
+    childNodes.forEach((node, index) => {
+        const angle = index * angleStep;
+        node.x = parentNode.x + radius * Math.cos(angle);
+        node.y = parentNode.y + radius * Math.sin(angle);
+    });
+}
+
 function positionNodes() {
+    // This function is now only responsible for initial positioning
     const rootNode = nodes[0];
     if (!rootNode) return;
 
@@ -110,30 +131,6 @@ function positionNodes() {
             }
         });
     });
-
-    // Adjust positions to avoid overlaps
-    const nodeRadius = 60;
-    const minDistance = nodeRadius * 2;
-    for (let i = 0; i < 50; i++) { // Limit iterations to prevent infinite loop
-        let moved = false;
-        for (let j = 0; j < nodes.length; j++) {
-            for (let k = j + 1; k < nodes.length; k++) {
-                const dx = nodes[k].x - nodes[j].x;
-                const dy = nodes[k].y - nodes[j].y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < minDistance) {
-                    const angle = Math.atan2(dy, dx);
-                    const moveDistance = (minDistance - distance) / 2;
-                    nodes[j].x -= moveDistance * Math.cos(angle);
-                    nodes[j].y -= moveDistance * Math.sin(angle);
-                    nodes[k].x += moveDistance * Math.cos(angle);
-                    nodes[k].y += moveDistance * Math.sin(angle);
-                    moved = true;
-                }
-            }
-        }
-        if (!moved) break;
-    }
 }
 
 function renderMindmap() {
@@ -363,6 +360,7 @@ async function fetchSearchVolumes(keywords) {
 // Update the submitForm function
 async function submitForm(event) {
     event.preventDefault();
+    autocompleteList.innerHTML = '';
 
     const formData = new FormData(form);
     const userInputText = formData.get('user_input');
@@ -467,11 +465,81 @@ clearHistoryButton.addEventListener('click', async () => {
     }
 });
 
-// ... (keep the rest of the code, including autocomplete functionality)
+// Add this function to handle autocomplete
+async function handleAutocomplete() {
+    clearTimeout(autocompleteTimeout);
+    autocompleteTimeout = setTimeout(async () => {
+        const query = userInput.value.trim();
+        if (query.length < 2) {
+            autocompleteList.innerHTML = '';
+            autocompleteList.style.display = 'none';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/autocomplete?q=${encodeURIComponent(query)}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const suggestions = await response.json();
+            displayAutocompleteSuggestions(suggestions);
+        } catch (error) {
+            console.error('Error fetching autocomplete suggestions:', error);
+        }
+    }, 300);
+}
+
+// Add this function to display autocomplete suggestions
+function displayAutocompleteSuggestions(suggestions) {
+    autocompleteList.innerHTML = '';
+    if (suggestions.length === 0) {
+        autocompleteList.style.display = 'none';
+        return;
+    }
+    
+    suggestions.forEach(suggestion => {
+        const li = document.createElement('li');
+        li.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+        li.innerHTML = highlightMatch(suggestion, userInput.value);
+        li.addEventListener('click', () => {
+            userInput.value = suggestion.replace(/<[^>]*>/g, '');  // Remove HTML tags
+            autocompleteList.innerHTML = '';
+            autocompleteList.style.display = 'none';
+        });
+        autocompleteList.appendChild(li);
+    });
+    
+    autocompleteList.style.display = 'block';
+}
+
+// Add this new function to highlight the matching part of the suggestion
+function highlightMatch(suggestion, query) {
+    const regex = new RegExp(`(${query})`, 'gi');
+    return suggestion.replace(regex, '<strong class="text-primary">$1</strong>');
+}
+
+// Add these event listeners for the userInput
+userInput.addEventListener('input', handleAutocomplete);
+userInput.addEventListener('focus', handleAutocomplete);
+userInput.addEventListener('blur', () => {
+    setTimeout(() => {
+        autocompleteList.style.display = 'none';
+    }, 200);
+});
+
+// Add this new event listener to show suggestions on focus
+userInput.addEventListener('focus', () => {
+    if (autocompleteList.children.length > 0) {
+        autocompleteList.style.display = 'block';
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     initMindmap();
     renderMindmap();
+    
+    // Add the autocompleteList to the DOM
+    userInput.parentNode.appendChild(autocompleteList);
 });
 
 // Add event listener for zooming
