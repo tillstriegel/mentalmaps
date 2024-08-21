@@ -60,77 +60,58 @@ function addNodeToMindmap(content, parentId = null, searchVolume = null) {
     }
 
     const label = searchVolume !== null ? `${content}\n(${searchVolume})` : content;
+    const parentNode = parentId ? nodes.find(n => n.id === parentId) : null;
+    const startX = parentNode ? parentNode.x : mindmapContainer.clientWidth / 2;
+    const startY = parentNode ? parentNode.y : mindmapContainer.clientHeight / 2;
+
     newNode = { 
         id: ++nodeId, 
         label: label,
         content: content, // Store original content without search volume
-        x: parentId ? nodes.find(n => n.id === parentId).x : mindmapContainer.clientWidth / 2, 
-        y: parentId ? nodes.find(n => n.id === parentId).y : mindmapContainer.clientHeight / 2 
+        x: startX,
+        y: startY
     };
+
+    // Use spiral placement for new nodes
+    const spiralAngle = 0.5;
+    const spiralSpacing = 100;
+    let angle = 0;
+    let radius = 0;
+
+    while (isOverlapping(newNode)) {
+        angle += spiralAngle;
+        radius += spiralSpacing / (2 * Math.PI);
+        newNode.x = startX + radius * Math.cos(angle);
+        newNode.y = startY + radius * Math.sin(angle);
+    }
+
     nodes.push(newNode);
     if (parentId !== null) {
         edges.push({ from: parentId, to: newNode.id });
     }
-    groupNewNodes(parentId);
+
     renderMindmap();
     return newNode.id;
 }
 
-function groupNewNodes(parentId) {
-    if (!parentId) return;
-
-    const parentNode = nodes.find(n => n.id === parentId);
-    const childNodes = nodes.filter(n => edges.some(e => e.from === parentId && e.to === n.id));
-
-    const angleStep = (2 * Math.PI) / childNodes.length;
-    const radius = 150; // Distance from parent node
-
-    childNodes.forEach((node, index) => {
-        const angle = index * angleStep;
-        node.x = parentNode.x + radius * Math.cos(angle);
-        node.y = parentNode.y + radius * Math.sin(angle);
+function isOverlapping(node) {
+    const minDistance = 150; // Minimum distance between nodes
+    return nodes.some(existingNode => {
+        if (existingNode.id === node.id) return false;
+        const dx = existingNode.x - node.x;
+        const dy = existingNode.y - node.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < minDistance;
     });
 }
 
+// Update the positionNodes function to only handle initial positioning of the root node
 function positionNodes() {
-    // This function is now only responsible for initial positioning
     const rootNode = nodes[0];
     if (!rootNode) return;
 
-    const levelMap = new Map();
-    const nodeLevels = new Map();
-
-    // Assign levels to nodes
-    function assignLevels(nodeId, level) {
-        nodeLevels.set(nodeId, level);
-        if (!levelMap.has(level)) levelMap.set(level, []);
-        levelMap.get(level).push(nodeId);
-
-        const children = edges.filter(e => e.from === nodeId).map(e => e.to);
-        children.forEach(childId => assignLevels(childId, level + 1));
-    }
-    assignLevels(rootNode.id, 0);
-
-    // Position nodes by level
-    const baseRadius = 150;
-    const radiusIncrement = 100;
-    levelMap.forEach((nodeIds, level) => {
-        const radius = baseRadius + level * radiusIncrement;
-        const angleStep = (2 * Math.PI) / nodeIds.length;
-        nodeIds.forEach((nodeId, index) => {
-            const node = nodes.find(n => n.id === nodeId);
-            const angle = index * angleStep;
-            if (level === 0) {
-                node.x = mindmapContainer.clientWidth / 2;
-                node.y = mindmapContainer.clientHeight / 2;
-            } else {
-                const parentEdge = edges.find(e => e.to === nodeId);
-                const parentNode = nodes.find(n => n.id === parentEdge.from);
-                node.x = parentNode.x + radius * Math.cos(angle);
-                node.y = parentNode.y + radius * Math.sin(angle);
-            }
-        });
-    });
+    rootNode.x = mindmapContainer.clientWidth / 2;
+    rootNode.y = mindmapContainer.clientHeight / 2;
 }
 
 function renderMindmap() {
@@ -510,6 +491,10 @@ function displayAutocompleteSuggestions(suggestions) {
     });
     
     autocompleteList.style.display = 'block';
+    // Position the autocomplete list above the input field
+    const inputRect = userInput.getBoundingClientRect();
+    autocompleteList.style.bottom = `${inputRect.height + 8}px`; // 8px for margin
+    autocompleteList.style.top = 'auto';
 }
 
 // Add this new function to highlight the matching part of the suggestion
