@@ -109,19 +109,23 @@ def stream_groq_response(messages):
     system_prompt = {
         "role": "system",
         "content": """
-        You are an industrious opportunity finder.
-        You have a deep understanding of human interests and desires.
-        I want you to investigate a topic and determine what people might be looking for.
-        Always answer with a list of 5 comma-separated, related, popular google searches.
-        The keywords should be in the format [[keyword1, keyword2, keyword3, ...]] with double square brackets.
+        You are a top researcher.
+        I want you to investigate a topic and determine what interesting fields and topics are related to it.
+        Always answer with a list of 5 comma-separated, related, subtopics.
+        The subtopics should be in the format [[subtopic1, subtopic2, subtopic3, ...]] with double square brackets.
         Following this list, in the next line, output the name of a fitting Google Material Icon (e.g. "search", "book", "pets", "health", etc.).
-        Ensure that the icon name is on a new line, separated by a newline character.
+        Ensure that the icon name is on a new line.
+
+        EXAMPLE OUTPUT:
+        [[subtopic1, subtopic2, subtopic3, ...]]
+        icon_name
         """
     }
     
     chat_completion = client.chat.completions.create(
         messages=[system_prompt] + messages,
         model="llama-3.1-70b-versatile",
+        temperature=0.5,
         stream=True,
     )
 
