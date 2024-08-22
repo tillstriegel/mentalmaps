@@ -1,4 +1,3 @@
-// Add this at the top of the file
 let lastSearchVolumes = {};
 
 const form = document.getElementById('chat-form');
@@ -47,13 +46,12 @@ function initMindmap() {
     wrapper.style.top = '0';
     mindmapContainer.appendChild(wrapper);
 
-    // Add event listeners for panning
+    // event listeners
     mindmapContainer.addEventListener('mousedown', startPanning);
     document.addEventListener('mousemove', pan);
     document.addEventListener('mouseup', stopPanning);
-
-    // Add event listener for double-click
     mindmapContainer.addEventListener('dblclick', startCreatingNewNode);
+    mindmapContainer.addEventListener('wheel', handleZoom, { passive: false });
 }
 
 function addNodeToMindmap(content, parentId = null, searchVolume = null, x = null, y = null, iconName = null) {
@@ -77,20 +75,25 @@ function addNodeToMindmap(content, parentId = null, searchVolume = null, x = nul
         x: x !== null ? x : startX,
         y: y !== null ? y : startY,
         searchVolume: searchVolume,  // Store the search volume
-        iconName: iconName  // Add this line to store the icon name
+        iconName: iconName
     };
 
-    // Use spiral placement for new nodes
-    const spiralAngle = 0.5;
-    const spiralSpacing = 100;
-    let angle = 0;
-    let radius = 0;
+    // Use spiral placement
+    if (parentId !== null) {
+        const spiralAngle = 0.5;
+        const spiralSpacing = 150;
+        let angle = 0;
+        let radius = 0;
+        let attempts = 0;
+        const maxAttempts = 50;
 
-    while (isOverlapping(newNode)) {
-        angle += spiralAngle;
-        radius += spiralSpacing / (2 * Math.PI);
-        newNode.x = startX + radius * Math.cos(angle);
-        newNode.y = startY + radius * Math.sin(angle);
+        while (isOverlapping(newNode) && attempts < maxAttempts) {
+            angle += spiralAngle;
+            radius += spiralSpacing / (2 * Math.PI);
+            newNode.x = startX + radius * Math.cos(angle);
+            newNode.y = startY + radius * Math.sin(angle);
+            attempts++;
+        }
     }
 
     nodes.push(newNode);
@@ -103,7 +106,7 @@ function addNodeToMindmap(content, parentId = null, searchVolume = null, x = nul
 }
 
 function isOverlapping(node) {
-    const minDistance = 150; // Minimum distance between nodes
+    const minDistance = 180;
     return nodes.some(existingNode => {
         if (existingNode.id === node.id) return false;
         const dx = existingNode.x - node.x;
@@ -113,104 +116,103 @@ function isOverlapping(node) {
     });
 }
 
-// Update the positionNodes function to only handle initial positioning of the root node
-function positionNodes() {
-    const rootNode = nodes[0];
-    if (!rootNode) return;
-
-    rootNode.x = mindmapContainer.clientWidth / 2;
-    rootNode.y = mindmapContainer.clientHeight / 2;
-}
-
 function renderMindmap() {
     const wrapper = mindmapContainer.querySelector('.mindmap-wrapper');
     wrapper.innerHTML = '';
 
     // Render edges
     edges.forEach(edge => {
-        const fromNode = nodes.find(n => n.id === edge.from);
-        const toNode = nodes.find(n => n.id === edge.to);
-        const edgeElement = document.createElement('div');
-        edgeElement.className = 'edge';
-        const dx = toNode.x - fromNode.x;
-        const dy = toNode.y - fromNode.y;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        const angle = Math.atan2(dy, dx);
-        edgeElement.style.width = `${length}px`;
-        edgeElement.style.left = `${fromNode.x}px`;
-        edgeElement.style.top = `${fromNode.y}px`;
-        edgeElement.style.transform = `rotate(${angle}rad)`;
+        const edgeElement = createEdgeElement(edge);
         wrapper.appendChild(edgeElement);
     });
 
     // Render nodes
     nodes.forEach(node => {
-        const nodeElement = document.createElement('div');
-        nodeElement.className = 'node';
-        nodeElement.style.left = `${node.x - 50}px`;
-        nodeElement.style.top = `${node.y - 25}px`;
-        
-        // Create a container for the label and icon
-        const contentContainer = document.createElement('div');
-        contentContainer.className = 'node-content';
-        
-        // Add the icon if it exists
-        if (node.iconName) {
-            const iconElement = document.createElement('span');
-            iconElement.className = 'material-symbols-outlined';
-            iconElement.textContent = node.iconName;
-            iconElement.style.fontSize = '24px'; // Ensure the icon size
-            iconElement.style.lineHeight = '1'; // Adjust line height
-            contentContainer.appendChild(iconElement);
-        }
-        
-        // Add the label
-        const labelElement = document.createElement('div');
-        labelElement.textContent = node.label;
-        contentContainer.appendChild(labelElement);
-        
-        nodeElement.appendChild(contentContainer);
-
-        // Color the node based on its search volume
-        const volume = parseInt(node.label.split('(')[1]);
-        if (!isNaN(volume)) {
-            const color = getColorForVolume(volume);
-            nodeElement.style.backgroundColor = color;
-            nodeElement.style.color = volume > 50 ? '#fff' : '#1e293b';  // Adjust text color for readability
-            nodeElement.style.borderColor = 'transparent';
-        }
-        
-        let isDragging = false;
-        let dragStartTime;
-        let dragStartX, dragStartY;
-
-        nodeElement.addEventListener('mousedown', (e) => {
-            isDragging = false;
-            dragStartTime = new Date().getTime();
-            dragStartX = e.clientX;
-            dragStartY = e.clientY;
-            startDragging(e, node);
-        });
-
-        nodeElement.addEventListener('mousemove', (e) => {
-            if (!isDragging && (Math.abs(e.clientX - dragStartX) > 5 || Math.abs(e.clientY - dragStartY) > 5)) {
-                isDragging = true;
-            }
-        });
-
-        nodeElement.addEventListener('mouseup', (e) => {
-            const dragEndTime = new Date().getTime();
-            const dragDuration = dragEndTime - dragStartTime;
-
-            if (!isDragging && dragDuration < 200) {
-                e.stopPropagation();
-                const keyword = node.content;
-                sendKeyword(keyword, node.id);
-            }
-            stopDragging(e);
-        });
-
+        const nodeElement = createNodeElement(node);
         wrapper.appendChild(nodeElement);
+    });
+}
+
+function createEdgeElement(edge) {
+    const fromNode = nodes.find(n => n.id === edge.from);
+    const toNode = nodes.find(n => n.id === edge.to);
+    const edgeElement = document.createElement('div');
+    edgeElement.className = 'edge';
+    const dx = toNode.x - fromNode.x;
+    const dy = toNode.y - fromNode.y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+    edgeElement.style.width = `${length}px`;
+    edgeElement.style.left = `${fromNode.x}px`;
+    edgeElement.style.top = `${fromNode.y}px`;
+    edgeElement.style.transform = `rotate(${angle}rad)`;
+    return edgeElement;
+}
+
+function createNodeElement(node) {
+    const nodeElement = document.createElement('div');
+    nodeElement.className = 'node';
+    nodeElement.style.left = `${node.x - 60}px`;
+    nodeElement.style.top = `${node.y - 60}px`;
+    
+    const contentContainer = document.createElement('div');
+    contentContainer.className = 'node-content';
+    
+    if (node.iconName) {
+        const iconElement = document.createElement('span');
+        iconElement.className = 'material-symbols-outlined';
+        iconElement.textContent = node.iconName;
+        contentContainer.appendChild(iconElement);
+    }
+    
+    const labelElement = document.createElement('div');
+    labelElement.textContent = node.label;
+    contentContainer.appendChild(labelElement);
+    
+    nodeElement.appendChild(contentContainer);
+
+    // Color the node based on its search volume
+    const volume = parseInt(node.label.split('(')[1]);
+    if (!isNaN(volume)) {
+        const color = getColorForVolume(volume);
+        nodeElement.style.backgroundColor = color;
+        nodeElement.style.color = volume > 50 ? '#fff' : '#1e293b';
+        nodeElement.style.borderColor = 'transparent';
+    }
+    
+    addNodeEventListeners(nodeElement, node);
+    
+    return nodeElement;
+}
+
+function addNodeEventListeners(nodeElement, node) {
+    let isDragging = false;
+    let dragStartTime;
+    let dragStartX, dragStartY;
+
+    nodeElement.addEventListener('mousedown', (e) => {
+        isDragging = false;
+        dragStartTime = new Date().getTime();
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        startDragging(e, node);
+    });
+
+    nodeElement.addEventListener('mousemove', (e) => {
+        if (!isDragging && (Math.abs(e.clientX - dragStartX) > 5 || Math.abs(e.clientY - dragStartY) > 5)) {
+            isDragging = true;
+        }
+    });
+
+    nodeElement.addEventListener('mouseup', (e) => {
+        const dragEndTime = new Date().getTime();
+        const dragDuration = dragEndTime - dragStartTime;
+
+        if (!isDragging && dragDuration < 200) {
+            e.stopPropagation();
+            sendKeyword(node.content, node.id);
+        }
+        stopDragging(e);
     });
 }
 
@@ -267,9 +269,8 @@ function stopDragging(e) {
     if (isDragging) {
         isDragging = false;
         if (!e.target.classList.contains('node')) {
-            positionNodes(); // Reposition nodes after dragging
+            renderMindmap();
         }
-        renderMindmap();
         document.removeEventListener('mousemove', drag);
         document.removeEventListener('mouseup', stopDragging);
     }
@@ -299,10 +300,8 @@ function handleZoom(event) {
 }
 
 async function sendKeyword(keyword, nodeId) {
-    // Use the existing node ID instead of creating a new one
     lastClickedNodeId = nodeId;
 
-    // Trigger the AI response
     const formData = new FormData();
     formData.append('user_input', keyword);
 
@@ -332,8 +331,12 @@ async function sendKeyword(keyword, nodeId) {
                     if (content.trim() === '[END]') {
                         processAssistantResponse(assistantResponse, nodeId);
                     } else if (content.startsWith('SEARCH_VOLUMES')) {
-                        const searchVolumes = JSON.parse(content.slice(14));
-                        updateSearchVolumes(searchVolumes, nodeId);
+                        try {
+                            const searchVolumes = JSON.parse(content.slice(14));
+                            updateSearchVolumes(searchVolumes, nodeId);
+                        } catch (error) {
+                            console.error('Error parsing search volumes:', error);
+                        }
                     } else {
                         assistantResponse += content;
                         const keywordMatch = content.match(/\[\[(.*?)\]\]/);
@@ -351,6 +354,7 @@ async function sendKeyword(keyword, nodeId) {
     } catch (error) {
         console.error('Error:', error);
         // Handle the error (e.g., display an error message to the user)
+        alert('An error occurred while processing your request. Please try again.');
     }
 }
 
@@ -376,7 +380,6 @@ async function fetchSearchVolumes(keywords) {
     }
 }
 
-// Update the submitForm function
 async function submitForm(event) {
     event.preventDefault();
     autocompleteList.innerHTML = '';
@@ -441,7 +444,6 @@ async function submitForm(event) {
     }
 }
 
-// Update the updateSearchVolumes function
 function updateSearchVolumes(searchVolumes, rootId) {
     lastSearchVolumes = { ...lastSearchVolumes, ...searchVolumes };
     nodes.forEach(node => {
@@ -451,19 +453,17 @@ function updateSearchVolumes(searchVolumes, rootId) {
             node.searchVolume = lastSearchVolumes[keyword];  // Update the stored search volume
         }
     });
-    positionNodes();
     renderMindmap();
 }
 
-// Update the processAssistantResponse function
 function processAssistantResponse(response, parentId) {
-    console.log("Full AI response:", JSON.stringify(response)); // Log the full response with newlines preserved
+    console.log("Full AI response:", JSON.stringify(response));
 
     const keywordMatch = response.match(/\[\[(.*?)\]\]/);
-    const iconMatch = response.match(/\]\]\s*([\s\S]*)/); // Match everything after ']]'
+    const iconMatch = response.match(/\]\]\s*([\s\S]*)/);
 
-    console.log("Keyword match:", keywordMatch); // Log the keyword match
-    console.log("Icon match:", iconMatch); // Log the icon match
+    console.log("Keyword match:", keywordMatch);
+    console.log("Icon match:", iconMatch);
 
     if (keywordMatch) {
         const keywords = keywordMatch[1].split(',').map(keyword => keyword.trim());
@@ -477,23 +477,21 @@ function processAssistantResponse(response, parentId) {
 
     if (iconMatch) {
         const iconName = iconMatch[1].trim();
-        console.log("Extracted icon name:", iconName); // Log the extracted icon name
+        console.log("Extracted icon name:", iconName);
         const parentNode = nodes.find(n => n.id === parentId);
         if (parentNode) {
             parentNode.iconName = iconName;
-            console.log(`Icon '${iconName}' added to node ${parentId}`); // Debug log
+            console.log(`Icon '${iconName}' added to node ${parentId}`);
         } else {
-            console.log(`Parent node with id ${parentId} not found`); // Debug log
+            console.log(`Parent node with id ${parentId} not found`);
         }
     } else {
-        console.log("No icon name found in the response"); // Debug log
+        console.log("No icon name found in the response");
     }
 
-    positionNodes();
     renderMindmap();
 }
 
-// Update the updateNodeWithIcon function
 function updateNodeWithIcon(nodeId, iconName) {
     const node = nodes.find(n => n.id === nodeId);
     if (node) {
@@ -516,7 +514,7 @@ clearHistoryButton.addEventListener('click', async () => {
     }
 });
 
-// Add this function to handle autocomplete
+// function to handle autocomplete
 async function handleAutocomplete() {
     clearTimeout(autocompleteTimeout);
     autocompleteTimeout = setTimeout(async () => {
@@ -540,7 +538,7 @@ async function handleAutocomplete() {
     }, 300);
 }
 
-// Add this function to display autocomplete suggestions
+// function to display autocomplete suggestions
 function displayAutocompleteSuggestions(suggestions) {
     autocompleteList.innerHTML = '';
     if (suggestions.length === 0) {
@@ -567,19 +565,18 @@ function displayAutocompleteSuggestions(suggestions) {
     autocompleteList.style.top = 'auto';
 }
 
-// Add this new function to highlight the matching part of the suggestion
+// function to highlight the matching part of the suggestion
 function highlightMatch(suggestion, query) {
     const regex = new RegExp(`(${query})`, 'gi');
     return suggestion.replace(regex, '<strong class="text-primary">$1</strong>');
 }
 
-// Add this function to handle the icon extraction
+// function to handle the icon extraction
 function extractIconFromResponse(response) {
     const iconMatch = response.match(/\n(\w+)\s*$/);
     return iconMatch ? iconMatch[1].trim() : null;
 }
 
-// Add this function at the top of the file
 function getColorForVolume(volume) {
     const maxVolume = 100;  // Adjust this value based on your typical maximum volume
     const minLightness = 40; // Darker blue
@@ -588,7 +585,7 @@ function getColorForVolume(volume) {
     return `hsl(210, 70%, ${lightness}%)`;
 }
 
-// Add these event listeners for the userInput
+// event listeners for the userInput
 userInput.addEventListener('input', handleAutocomplete);
 userInput.addEventListener('focus', handleAutocomplete);
 userInput.addEventListener('blur', () => {
@@ -597,7 +594,7 @@ userInput.addEventListener('blur', () => {
     }, 200);
 });
 
-// Add this new event listener to show suggestions on focus
+// event listener to show suggestions on focus
 userInput.addEventListener('focus', () => {
     if (autocompleteList.children.length > 0) {
         autocompleteList.style.display = 'block';
@@ -612,10 +609,8 @@ document.addEventListener('DOMContentLoaded', () => {
     userInput.parentNode.appendChild(autocompleteList);
 });
 
-// Add event listener for zooming
 mindmapContainer.addEventListener('wheel', handleZoom, { passive: false });
 
-// Add this event listener at the bottom of the file
 form.addEventListener('submit', submitForm);
 
 function startCreatingNewNode(e) {
