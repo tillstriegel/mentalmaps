@@ -111,13 +111,13 @@ def stream_groq_response(messages):
         "content": """
         You are a top researcher.
         I want you to investigate a topic and determine what interesting fields and topics are related to it.
-        Always answer with a list of 5 comma-separated, related, subtopics.
-        The subtopics should be in the format [[subtopic1, subtopic2, subtopic3, ...]] with double square brackets.
+        Always answer with a list of 5 comma-separated, related, long-tail keywords.
+        The keywords should be in the format [[keyword1, keyword2, keyword3, ...]] with double square brackets.
         Following this list, in the next line, output the name of a fitting Google Material Icon (e.g. "search", "book", "pets", "health", etc.).
         Ensure that the icon name is on a new line.
 
         EXAMPLE OUTPUT:
-        [[subtopic1, subtopic2, subtopic3, ...]]
+        [[keyword1, keyword2, keyword3, ...]]
         icon_name
         """
     }
